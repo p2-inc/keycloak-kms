@@ -26,11 +26,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.keycloak.common.util.KeyUtils;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.component.ComponentModel;
 import org.keycloak.component.ComponentValidationException;
 import org.keycloak.crypto.Algorithm;
+import org.keycloak.crypto.JavaAlgorithm;
 import org.keycloak.crypto.KeyStatus;
 import org.keycloak.crypto.KeyType;
 import org.keycloak.crypto.KeyUse;
@@ -147,30 +150,52 @@ class NativeKeyProviderTest {
     assertTrue(verifier.verify(signature));
   }
 
-  @Test
-  @DisplayName("RSA and PSS both route through the KMS")
-  void rsaAndPss() throws Exception {
-    KmsRsaNativeKeyProviderFactory factory = new KmsRsaNativeKeyProviderFactory();
-    ComponentModel model = component(KmsRsaNativeKeyProviderFactory.ID, RSA_KEY);
+  /**
+   * Every algorithm Keycloak can configure a native key with must reach this provider.
+   *
+   * <p>Driven off {@link JavaAlgorithm#getJavaAlgorithm} rather than hard-coded JCA names, because
+   * the mapping is Keycloak's to choose and guessing it is how this went wrong the first time:
+   * PS256 maps to {@code SHA256withRSAandMGF1}, not {@code RSASSA-PSS}, so a provider registered
+   * under the latter alone would silently never be consulted.
+   */
+  @ParameterizedTest(name = "{0}")
+  @DisplayName("every JOSE algorithm Keycloak maps routes to the KMS provider")
+  @ValueSource(strings = {Algorithm.ES256, Algorithm.ES384, Algorithm.ES512})
+  void ecAlgorithmsRoute(String joseAlgorithm) throws Exception {
+    assertRoutes(new KmsEcNativeKeyProviderFactory(), EC_KEY, joseAlgorithm);
+  }
+
+  @ParameterizedTest(name = "{0}")
+  @DisplayName("every RSA JOSE algorithm, including PSS, routes to the KMS provider")
+  @ValueSource(
+      strings = {
+        Algorithm.RS256,
+        Algorithm.RS384,
+        Algorithm.RS512,
+        Algorithm.PS256,
+        Algorithm.PS384,
+        Algorithm.PS512
+      })
+  void rsaAlgorithmsRoute(String joseAlgorithm) throws Exception {
+    assertRoutes(new KmsRsaNativeKeyProviderFactory(), RSA_KEY, joseAlgorithm);
+  }
+
+  private void assertRoutes(
+      AbstractKmsNativeKeyProviderFactory factory, String kmsKeyId, String joseAlgorithm)
+      throws Exception {
+    ComponentModel model = component(factory.getId(), kmsKeyId);
+    model.put(Attributes.ALGORITHM_KEY, joseAlgorithm);
     factory.validateConfiguration(session, realm.model(), model);
     KeyWrapper key = only(factory.create(session, model));
 
-    Signature pkcs1 = Signature.getInstance("SHA256withRSA");
-    pkcs1.initSign((PrivateKey) key.getPrivateKey());
-    pkcs1.update("x".getBytes(StandardCharsets.UTF_8));
-    assertEquals(KmsJcaProvider.NAME, pkcs1.getProvider().getName());
-    assertNotNull(pkcs1.sign());
+    String javaAlgorithm = JavaAlgorithm.getJavaAlgorithm(joseAlgorithm);
+    Signature signature = Signature.getInstance(javaAlgorithm);
+    signature.initSign((PrivateKey) key.getPrivateKey());
 
-    // The local backend cannot do PSS, so this proves the routing, not the signature. Producing a
-    // real PSS signature is what the LocalStack integration test is for.
-    Signature pss = Signature.getInstance("RSASSA-PSS");
-    pss.initSign((PrivateKey) key.getPrivateKey());
-    assertEquals(KmsJcaProvider.NAME, pss.getProvider().getName());
-    pss.setParameter(
-        new java.security.spec.PSSParameterSpec(
-            "SHA-256", "MGF1", java.security.spec.MGF1ParameterSpec.SHA256, 32, 1));
-    pss.update("x".getBytes(StandardCharsets.UTF_8));
-    assertThrows(java.security.SignatureException.class, pss::sign);
+    assertEquals(
+        KmsJcaProvider.NAME,
+        signature.getProvider().getName(),
+        joseAlgorithm + " maps to " + javaAlgorithm + ", which must reach the KMS provider");
   }
 
   @Test

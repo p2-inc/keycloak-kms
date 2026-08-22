@@ -40,6 +40,12 @@ public final class KmsJcaProvider extends Provider {
     put("Signature.SHA256withRSA", KmsSignatureSpi.RsaSha256.class.getName());
     put("Signature.SHA384withRSA", KmsSignatureSpi.RsaSha384.class.getName());
     put("Signature.SHA512withRSA", KmsSignatureSpi.RsaSha512.class.getName());
+    // The names Keycloak's JavaAlgorithm actually maps PS256/384/512 to. Registering only
+    // "RSASSA-PSS" would leave PSS realm keys with no provider that accepts them.
+    put("Signature.SHA256withRSAandMGF1", KmsSignatureSpi.PssSha256.class.getName());
+    put("Signature.SHA384withRSAandMGF1", KmsSignatureSpi.PssSha384.class.getName());
+    put("Signature.SHA512withRSAandMGF1", KmsSignatureSpi.PssSha512.class.getName());
+    // And the JDK's own spelling, for anything that asks for it directly.
     put("Signature.RSASSA-PSS", KmsSignatureSpi.RsaPss.class.getName());
   }
 

@@ -61,7 +61,8 @@ public final class SelfSignedCertMinter {
               name,
               publicKey);
 
-      X509CertificateHolder holder = builder.build(new KmsContentSigner(kms, keyId, algorithm));
+      X509CertificateHolder holder =
+          builder.build(new KmsContentSigner(kms, keyId, certificateAlgorithm(algorithm)));
       return new JcaX509CertificateConverter().getCertificate(holder);
     } catch (KmsException e) {
       throw e;
@@ -70,6 +71,24 @@ public final class SelfSignedCertMinter {
           "could not mint a self-signed certificate for KMS key " + keyId + ": " + e.getMessage(),
           e);
     }
+  }
+
+  /**
+   * The algorithm to sign the certificate with.
+   *
+   * <p>Always PKCS#1 for RSA, even when the realm key signs tokens with PSS. A PSS certificate
+   * signature needs explicit RSASSA-PSS parameters in the AlgorithmIdentifier, and they add nothing
+   * to a self-signed identifier whose chain nobody validates. The important part is that the
+   * declared algorithm and the algorithm actually used are the same one — declaring PKCS#1 while
+   * signing PSS produces a certificate that cannot be verified by anything.
+   */
+  static KmsSigningAlgorithm certificateAlgorithm(KmsSigningAlgorithm algorithm) {
+    return switch (algorithm) {
+      case RSASSA_PSS_SHA_256 -> KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_256;
+      case RSASSA_PSS_SHA_384 -> KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_384;
+      case RSASSA_PSS_SHA_512 -> KmsSigningAlgorithm.RSASSA_PKCS1_V1_5_SHA_512;
+      default -> algorithm;
+    };
   }
 
   /** A BouncyCastle {@link ContentSigner} whose signature comes from the KMS. */
@@ -119,12 +138,9 @@ public final class SelfSignedCertMinter {
         case RSASSA_PKCS1_V1_5_SHA_256 -> "SHA256withRSA";
         case RSASSA_PKCS1_V1_5_SHA_384 -> "SHA384withRSA";
         case RSASSA_PKCS1_V1_5_SHA_512 -> "SHA512withRSA";
-        // A certificate is always signed with PKCS#1 here even when the realm key signs tokens
-        // with PSS: PSS certificate signatures need explicit parameters that add nothing to a
-        // self-signed identifier nobody validates a chain against.
-        case RSASSA_PSS_SHA_256 -> "SHA256withRSA";
-        case RSASSA_PSS_SHA_384 -> "SHA384withRSA";
-        case RSASSA_PSS_SHA_512 -> "SHA512withRSA";
+        // Unreachable: certificateAlgorithm() has already mapped PSS to its PKCS#1 equivalent.
+        case RSASSA_PSS_SHA_256, RSASSA_PSS_SHA_384, RSASSA_PSS_SHA_512 ->
+            throw new IllegalStateException("PSS should have been mapped to PKCS#1: " + algorithm);
       };
     }
   }

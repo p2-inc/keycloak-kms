@@ -280,8 +280,10 @@ The part with the sharp edges.
 same way and writes it **explicitly** into the new component's `kid` config, so it is pinned rather
 than re-derived. Secret providers already store an explicit `kid`; it is copied verbatim.
 
-Consequence: JWKS is byte-identical across the migration, every issued token keeps verifying, there
-is no window. That property is the acceptance test.
+Consequence: every key JWKS publishes is unchanged across the migration, every issued token keeps
+verifying, there is no window. That property is the acceptance test. (The `keys` array may be
+re-ordered — a JWK Set is unordered by RFC 7517 and clients select by kid — so the test compares
+the set keyed by kid rather than the document.)
 
 **Transaction shape.** Per key, inside one Keycloak transaction:
 
@@ -386,7 +388,7 @@ Integration, LocalStack + Keycloak:
 | 1 | Add `kms-rsa-generated` → obtain token → verify against JWKS | The baseline |
 | 2 | Restart the container → same kid, same public key | Material lives outside pod memory |
 | 3 | Two containers, one CMK → token from A verifies on B | Multi-instance property (ported from `instance/multi-smoke.sh`) |
-| 4 | Migrate a realm with stock `rsa-generated` | JWKS byte-identical, kid unchanged, pre-migration token still verifies, legacy deactivated, log emitted with correct component id |
+| 4 | Migrate a realm with stock `rsa-generated` | Every published key unchanged (compared as a kid-keyed set), kid unchanged, pre-migration token still verifies, legacy deactivated, log emitted with correct component id |
 | 5 | Copy realm A's `wrappedMaterial` into realm B | Decrypt denied — the tenancy property |
 | 6 | Revoke KMS access | Cold start fails; running pod 503s rather than regenerating a DB-backed key |
 | 7 | Rotate | New kid at higher priority, old kid still passive in JWKS, old tokens still verify |

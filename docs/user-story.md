@@ -176,8 +176,13 @@ curl -X POST "https://sso.example.com/realms/customer-a/kms/migrate" \
 
 **The kid does not change, and neither does the public key.** The extension reads the existing
 private key, encrypts it under the CMK, and writes a KMS-backed provider carrying the *same* key
-material at the *same* priority — so JWKS is byte-identical before and after, and every token
-already in the wild keeps verifying. There is no rotation, no re-login, no window.
+material at the *same* priority — so every key JWKS publishes is unchanged, and every token already
+in the wild keeps verifying. There is no rotation, no re-login, no window.
+
+*(The order of the `keys` array can change, because the migrated providers are new rows. A JWK Set
+is unordered by RFC 7517 and clients select by `kid`, so this is invisible to anything that reads
+it correctly — but it is worth knowing before you diff two JWKS documents and think something
+moved.)*
 
 The legacy component is left in place but deactivated (`active=false`, `enabled=false`) so it
 contributes nothing to JWKS and no duplicate kid appears. Then the message Dana is waiting for:

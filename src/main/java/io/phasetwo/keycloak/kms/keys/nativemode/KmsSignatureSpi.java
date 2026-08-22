@@ -184,7 +184,33 @@ public abstract class KmsSignatureSpi extends SignatureSpi {
   }
 
   /**
-   * PSS, which JCA exposes as a single {@code RSASSA-PSS} algorithm parameterised at runtime.
+   * PSS under the name Keycloak actually asks for.
+   *
+   * <p>{@code JavaAlgorithm} maps PS256 to {@code "SHA256withRSAandMGF1"} — a BouncyCastle-style
+   * name — not to {@code "RSASSA-PSS"}. A provider that registered only the latter would never be
+   * consulted for a PSS realm key, and the failure would appear as "no provider accepts this key"
+   * at the first token. These three are the ones on Keycloak's path.
+   */
+  public static final class PssSha256 extends KmsSignatureSpi {
+    public PssSha256() {
+      super(KmsSigningAlgorithm.RSASSA_PSS_SHA_256);
+    }
+  }
+
+  public static final class PssSha384 extends KmsSignatureSpi {
+    public PssSha384() {
+      super(KmsSigningAlgorithm.RSASSA_PSS_SHA_384);
+    }
+  }
+
+  public static final class PssSha512 extends KmsSignatureSpi {
+    public PssSha512() {
+      super(KmsSigningAlgorithm.RSASSA_PSS_SHA_512);
+    }
+  }
+
+  /**
+   * PSS under the JDK's own name, which exposes one algorithm parameterised at runtime.
    *
    * <p>Defaults to SHA-256 and re-targets itself when {@code setParameter} names a different digest
    * — which is how Keycloak drives PS384 and PS512 through the same {@code Signature} instance.

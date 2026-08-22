@@ -41,6 +41,9 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <junit-jupiter.version>5.12.1</junit-jupiter.version>
     <bouncycastle.version>1.84</bouncycastle.version>
+    <!-- Default so that surefire/failsafe's @{argLine} still resolves when jacoco:prepare-agent
+         has not run — e.g. when someone invokes failsafe:integration-test directly. -->
+    <argLine></argLine>
     <ossrh.url>https://ossrh-staging-api.central.sonatype.com</ossrh.url>
     <!-- Fresh repo: no origin/main to ratchet against until the first push. -->
     <spotless.check.skip>true</spotless.check.skip>
@@ -111,6 +114,26 @@
             <keycloak-version>${keycloak.version}</keycloak-version>
           </systemPropertyVariables>
         </configuration>
+      </plugin>
+      <plugin>
+        <!-- Integration tests (*IT) need Docker, so they run in `mvn verify`, not `mvn test`. -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.2.2</version>
+        <configuration>
+          <argLine>@{argLine} -Djava.util.logging.manager=org.jboss.logmanager.LogManager</argLine>
+          <systemPropertyVariables>
+            <keycloak-version>${keycloak.version}</keycloak-version>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.jacoco</groupId>
