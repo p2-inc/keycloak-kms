@@ -41,8 +41,9 @@
     <testcontainers.version>1.21.4</testcontainers.version>
     <junit-jupiter.version>5.12.1</junit-jupiter.version>
     <bouncycastle.version>1.84</bouncycastle.version>
-    <!-- Matches the version bundled in Keycloak ${keycloak.version}. -->
-    <jackson.version>2.21.2</jackson.version>
+    <!-- Newest patch of the 2.21.x line Keycloak ${keycloak.version} bundles (it ships 2.21.2).
+         Same line, so the API is identical; newer patch, so Dependabot stays quiet. -->
+    <jackson.version>2.21.6</jackson.version>
     <!-- Default so that surefire/failsafe's @{argLine} still resolves when jacoco:prepare-agent
          has not run — e.g. when someone invokes failsafe:integration-test directly. -->
     <argLine></argLine>
@@ -215,10 +216,10 @@
       <version>3.1.0</version>
       <scope>provided</scope>
     </dependency>
-    <!-- Keep in step with the jackson Keycloak actually ships (26.7.1 bundles 2.21.2). This is
-         provided, so the version here only affects compilation and tests — nothing is bundled in
-         the jar. Pinning an older version served no purpose and left Dependabot reporting CVEs
-         against a dependency this extension does not ship. -->
+    <!-- Provided: the version here affects compilation and tests only. Nothing jackson is bundled
+         in the jar — Keycloak supplies it at runtime, and whatever it supplies is what runs, which
+         no setting in this file can change. Track the newest patch of Keycloak's 2.21.x line so
+         that the compile-time API matches runtime and the scanner has nothing to report. -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
