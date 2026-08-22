@@ -13,7 +13,9 @@ import org.keycloak.crypto.KeyUse;
 public enum KmsKeyType {
   RSA("RSA", KeyUse.SIG, "rsa-generated", "rsa"),
   RSA_ENC("RSA_ENC", KeyUse.ENC, "rsa-enc-generated", "rsa-enc"),
-  EC("EC", KeyUse.SIG, "ecdsa-generated"),
+  // EC is native-mode only in v1, so it replaces no stock provider: there is nothing to
+  // migrate into, and native keys are generate-only by design (see docs/native-mode.md).
+  EC("EC", KeyUse.SIG),
   HMAC("HMAC", KeyUse.SIG, "hmac-generated"),
   AES("AES", KeyUse.ENC, "aes-generated");
 
