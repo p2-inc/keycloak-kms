@@ -1,0 +1,74 @@
+# Dev environment for manually exercising the extension.
+#
+#   make dev     build the jar and start everything in the foreground
+#   make start   the same, detached
+#
+# Admin console : http://localhost:8080/admin   (admin / admin)
+# LocalStack    : http://localhost:4566
+#
+# Two realms are imported at startup:
+#   dev     — no key providers of its own, so Keycloak creates its stock ones. This is the realm
+#             to run a migration against.
+#   native  — empty; add a kms-ec-native provider by hand to try sign-in-KMS.
+#
+# The KMS is LocalStack, so nothing here talks to AWS and nothing here costs anything. See
+# docs/aws-setup.md for the real thing.
+
+services:
+  localstack:
+    image: localstack/localstack:3.8
+    environment:
+      SERVICES: kms
+      DEBUG: "0"
+    ports:
+      - "4566:4566"
+    volumes:
+      # Creates the CMKs Keycloak is configured to use and writes their aliases.
+      - ./docker/localstack-init.sh:/etc/localstack/init/ready.d/init.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal kms list-aliases --query \"Aliases[?AliasName=='alias/keycloak-realm-keys']\" --output text | grep -q keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.1
+    depends_on:
+      localstack:
+        condition: service_healthy
+    entrypoint:
+      - /opt/keycloak/bin/kc.sh
+      - start-dev
+      - --import-realm
+      - --log-level=INFO,io.phasetwo.keycloak.kms:DEBUG
+      # The extension. Envelope mode against the LocalStack CMK created above.
+      - --spi-kms--provider=aws
+      - --spi-kms--aws--region=us-east-1
+      - --spi-kms--aws--key-id=alias/keycloak-realm-keys
+      - --spi-kms--aws--endpoint=http://localstack:4566
+      # Leave this off to see migration work; turn it on to watch new realms get KMS keys directly.
+      - --spi-kms--default-for-new-realms=false
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+      # LocalStack accepts any credentials; the chain still has to find some.
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_REGION: us-east-1
+      JAVA_OPTS: "-Xms64m -Xmx768m"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./target/keycloak-kms.jar:/opt/keycloak/providers/keycloak-kms.jar:ro
+      - ./docker/dev-realm.json:/opt/keycloak/data/import/dev-realm.json:ro
+      - ./docker/native-realm.json:/opt/keycloak/data/import/native-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\nhost: localhost\\n' >&3 && cat <&3 | grep -q '\"status\": \"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s

@@ -215,9 +215,9 @@ The reasoning is cost and blast radius. An asymmetric CMK is $1/month and lives 
 schedules its deletion; if the extension created keys implicitly, a realm deleted in the console
 would silently orphan a billable key forever, and a bug in cleanup logic would schedule the deletion
 of a key that still signs production tokens. Neither failure is acceptable for something we would
-have to get right at scale. Auto-creation is available behind
-`--spi-kms--aws--allow-key-creation=true` for people who want it, and even then deletion stays
-manual, with the orphan risk documented.
+have to get right at scale. ~~Auto-creation is available behind `--spi-kms--aws--allow-key-creation=true` for people who want
+it.~~ **Dropped during implementation** — an opt-in flag does not make the orphaned-key problem go
+away, it just makes it someone's fault, and `aws kms create-key` is one command.
 
 At provider creation the extension logs the cost and quota implications explicitly, because "$1 per
 realm per month" and "the asymmetric quota caps how fast this cluster can issue tokens" are exactly
@@ -351,7 +351,6 @@ deprecation warning):
 | `--spi-kms--aws--region` | AWS region chain | Region for the KMS endpoint |
 | `--spi-kms--aws--key-id` | — | Default symmetric CMK for envelope mode |
 | `--spi-kms--aws--endpoint` | derived | Override, for LocalStack |
-| `--spi-kms--aws--allow-key-creation` | `false` | Permit the extension to create asymmetric CMKs |
 | `--spi-kms--cache-ttl-seconds` | `300` | Plaintext cache TTL (envelope); `0` disables |
 | `--spi-kms--default-for-new-realms` | `false` | Install envelope providers on realm creation |
 | `--spi-kms--migrate-on-startup` | `false` | Sweep all realms at boot |

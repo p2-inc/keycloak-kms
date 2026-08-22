@@ -31,10 +31,9 @@ import org.keycloak.provider.ProviderFactory;
  * unchanged</strong>. Same kid, same public key, same priority — so every token already issued
  * keeps verifying, no client re-fetches anything, and there is no window. (The <em>order</em> of
  * the JWK Set can change, since the migrated providers are new rows; a JWK Set is unordered by RFC
- * 7517 and clients select by kid.) That is only possible because
- * the kid a stock provider publishes is reproducible (config {@code kid}, else the RFC 7638
- * thumbprint), and it is why migration reads the existing material rather than generating new
- * material.
+ * 7517 and clients select by kid.) That is only possible because the kid a stock provider publishes
+ * is reproducible (config {@code kid}, else the RFC 7638 thumbprint), and it is why migration reads
+ * the existing material rather than generating new material.
  *
  * <p>The legacy component is deactivated, never deleted. If any of this is wrong, re-enabling it is
  * a complete rollback; a deleted component is not recoverable. The operator is told exactly what to

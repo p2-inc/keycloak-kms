@@ -88,6 +88,9 @@
         <version>2.27</version>
         <executions>
           <execution>
+            <!-- Bound early on purpose. The goal defaults to the verify phase, which means a
+                 formatting slip fails the build only after the whole integration suite has run. -->
+            <phase>process-sources</phase>
             <goals>
               <goal>check</goal>
             </goals>
