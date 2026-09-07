@@ -25,10 +25,9 @@ import javax.crypto.spec.SecretKeySpec;
  * A KMS that is not a KMS: AES-256-GCM under a locally held KEK, plus deterministically derived
  * keypairs for the native-mode surface.
  *
- * <p>Descended from {@code serverless}'s {@code LocalKmsClient} and kept for the same two reasons —
- * unit tests that must not need AWS, and a {@code docker compose} dev environment that starts with
- * one command. It provides no protection whatsoever against anyone who can read the Keycloak
- * configuration, and says so at every startup.
+ * <p>It exists for two reasons — unit tests that must not need AWS, and a {@code docker compose}
+ * dev environment that starts with one command. It provides no protection whatsoever against anyone
+ * who can read the Keycloak configuration, and says so at every startup.
  *
  * <p>It does enforce the {@link EncryptionContext}, as GCM additional authenticated data. That is
  * deliberate: if the local backend ignored the context, every test written against it would pass

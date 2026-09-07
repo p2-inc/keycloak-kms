@@ -6,18 +6,17 @@ import org.keycloak.provider.Provider;
 /**
  * A cloud key-management service, as this extension needs it.
  *
- * <p>Derived from {@code io.phasetwo.serverless.provider.keys.KmsClient}, which had exactly two
- * methods — {@code wrap} and {@code unwrap}. Three things were added on the way out of that
- * project: a key id (so one realm can use its own CMK), an {@link EncryptionContext} (so a
- * ciphertext is bound to the realm that owns it), and the signing half that makes non-extractable
- * keys possible.
+ * <p>Deliberately small. Envelope mode needs only {@code encrypt} and {@code decrypt}; everything
+ * else here exists for a specific reason. A key id lets one realm use its own CMK, an {@link
+ * EncryptionContext} binds a ciphertext to the realm that owns it, and {@code sign} / {@code
+ * publicKey} are the signing half that makes non-extractable keys possible.
  *
  * <p>Implementations must be thread-safe. They are shared across every realm on the instance and
  * called from request threads.
  */
 public interface KmsProvider extends Provider {
 
-  // ---------------------------------------------------------------- envelope mode (Tier A)
+  // ---------------------------------------------------------------- envelope mode
 
   /**
    * Encrypt key material under a symmetric KMS key.
@@ -36,7 +35,7 @@ public interface KmsProvider extends Provider {
    */
   byte[] decrypt(String keyId, byte[] ciphertext, EncryptionContext context);
 
-  // ---------------------------------------------------------------- native mode (Tier B)
+  // ---------------------------------------------------------------- native mode
 
   /** Whether this backend can sign with non-extractable keys. */
   default boolean supportsNativeKeys() {

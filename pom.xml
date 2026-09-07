@@ -48,8 +48,10 @@
          has not run — e.g. when someone invokes failsafe:integration-test directly. -->
     <argLine></argLine>
     <ossrh.url>https://ossrh-staging-api.central.sonatype.com</ossrh.url>
-    <!-- Fresh repo: no origin/main to ratchet against until the first push. -->
-    <spotless.check.skip>true</spotless.check.skip>
+    <!-- The parent ratchets spotless against origin/main, which a shallow CI checkout does not
+         fetch — a contributor's first pull request would fail on a missing ref rather than on
+         anything they wrote. The whole tree complies, so check all of it and need no git history. -->
+    <spotless.ratchetFrom></spotless.ratchetFrom>
   </properties>
 
   <scm>
@@ -88,7 +90,10 @@
       <plugin>
         <groupId>com.spotify.fmt</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
-        <version>2.27</version>
+        <!-- 2.27's google-java-format cannot parse on JDK 22+ (NoSuchMethodError on javac's
+             DeferredDiagnosticHandler). The project targets 21, but contributors run newer JDKs
+             and would hit a build failure with nothing to do with their change. -->
+        <version>2.29</version>
         <executions>
           <execution>
             <!-- Bound early on purpose. The goal defaults to the verify phase, which means a
