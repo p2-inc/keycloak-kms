@@ -6,8 +6,8 @@ package io.phasetwo.keycloak.kms.aws;
  * <p>Implementations return {@code null} from {@link #resolveOrNull()} when they are simply not
  * applicable — no environment variable set, no metadata service present — and throw only when they
  * are clearly the intended source but cannot deliver. That distinction is what lets {@link
- * AwsCredentialsProviderChain} fall through quietly on a laptop and fail loudly in a pod that was
- * meant to have a role.
+ * io.phasetwo.keycloak.kms.aws.credentials.AwsCredentialsProviderChain} fall through quietly on a
+ * laptop and fail loudly in a pod that was meant to have a role.
  */
 public interface AwsCredentialsProvider {
 
