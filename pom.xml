@@ -4,7 +4,7 @@
   <groupId>io.phasetwo.keycloak</groupId>
   <artifactId>keycloak-kms</artifactId>
   <packaging>jar</packaging>
-  <version>0.1-SNAPSHOT</version>
+  <version>0.1</version>
 
   <name>Phase Two Keycloak KMS</name>
   <description>Stores Keycloak realm signing keys in a cloud KMS instead of the database. Envelope encryption by default; optional non-extractable sign-in-KMS keys.</description>
@@ -46,14 +46,14 @@
     <jackson.version>2.21.6</jackson.version>
     <!-- Default so that surefire/failsafe's @{argLine} still resolves when jacoco:prepare-agent
          has not run — e.g. when someone invokes failsafe:integration-test directly. -->
-    <argLine></argLine>
+    <argLine />
     <ossrh.url>https://ossrh-staging-api.central.sonatype.com</ossrh.url>
   </properties>
 
   <scm>
     <url>https://github.com/p2-inc/keycloak-kms</url>
     <connection>scm:git:git@github.com:p2-inc/keycloak-kms.git</connection>
-    <tag>HEAD</tag>
+    <tag>v0.1</tag>
   </scm>
 
   <build>
