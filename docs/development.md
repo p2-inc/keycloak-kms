@@ -9,7 +9,7 @@ mvn verify                # everything, including the integration suites — nee
 mvn com.spotify.fmt:fmt-maven-plugin:format   # Google Java style; CI checks it
 ```
 
-Java 21. Keycloak 26.7.1.
+Java 21. Keycloak 26.7.3.
 
 ## The dev environment
 
@@ -53,7 +53,7 @@ lists. Identical kid lists are the point.
 |---|---|---|
 | `*Test` (surefire) | nothing | Everything provable in isolation: the codec, the local backend, SigV4, the credential chain, the key providers, the migrator, native routing. ~160 tests, a few seconds. |
 | `AwsKmsProviderIT` | Docker | The AWS backend against LocalStack's real KMS API. Proves the properties AWS enforces rather than we do. |
-| `KeycloakKmsIT` | Docker | The extension inside a real Keycloak 26.7.1: providers register, realms sign real tokens, migration preserves JWKS, native EC issues ES256. |
+| `KeycloakKmsIT` | Docker | The extension inside a real Keycloak 26.7.3: providers register, realms sign real tokens, migration preserves JWKS, native EC issues ES256. |
 
 ### Things worth knowing before you add a test
 

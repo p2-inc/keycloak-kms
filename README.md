@@ -40,7 +40,7 @@ release.
 ## Install
 
 ```dockerfile
-FROM quay.io/keycloak/keycloak:26.7.1
+FROM quay.io/keycloak/keycloak:26.7.3
 COPY keycloak-kms.jar /opt/keycloak/providers/
 RUN /opt/keycloak/bin/kc.sh build
 ```

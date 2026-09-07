@@ -34,14 +34,14 @@
     <java.version>21</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <main.java.package>io.phasetwo.keycloak.kms</main.java.package>
-    <keycloak.version>26.7.1</keycloak.version>
+    <keycloak.version>26.7.3</keycloak.version>
     <lombok.version>1.18.46</lombok.version>
     <auto-service.version>1.1.1</auto-service.version>
     <jacoco.version>0.8.14</jacoco.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <junit-jupiter.version>5.12.1</junit-jupiter.version>
     <bouncycastle.version>1.84</bouncycastle.version>
-    <!-- Newest patch of the 2.21.x line Keycloak ${keycloak.version} bundles (it ships 2.21.2).
+    <!-- Newest patch of the 2.21.x line Keycloak ${keycloak.version} bundles (it ships 2.21.5).
          Same line, so the API is identical; newer patch, so Dependabot stays quiet. -->
     <jackson.version>2.21.6</jackson.version>
     <!-- Default so that surefire/failsafe's @{argLine} still resolves when jacoco:prepare-agent

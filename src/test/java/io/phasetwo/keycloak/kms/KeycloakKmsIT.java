@@ -38,7 +38,7 @@ import org.testcontainers.utility.DockerImageName;
  */
 class KeycloakKmsIT {
 
-  private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.7.1";
+  private static final String KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.7.3";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private static Network network;
