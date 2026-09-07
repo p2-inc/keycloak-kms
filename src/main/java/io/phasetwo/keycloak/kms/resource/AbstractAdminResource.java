@@ -1,6 +1,5 @@
 package io.phasetwo.keycloak.kms.resource;
 
-import jakarta.ws.rs.*;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.HttpHeaders;

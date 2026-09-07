@@ -48,10 +48,6 @@
          has not run — e.g. when someone invokes failsafe:integration-test directly. -->
     <argLine></argLine>
     <ossrh.url>https://ossrh-staging-api.central.sonatype.com</ossrh.url>
-    <!-- The parent ratchets spotless against origin/main, which a shallow CI checkout does not
-         fetch — a contributor's first pull request would fail on a missing ref rather than on
-         anything they wrote. The whole tree complies, so check all of it and need no git history. -->
-    <spotless.ratchetFrom></spotless.ratchetFrom>
   </properties>
 
   <scm>
@@ -102,6 +98,34 @@
             <goals>
               <goal>check</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- The parent ratchets against origin/main, which CI's shallow single-branch checkout does
+             not fetch: spotless then fails with "No such reference 'origin/main'" before it looks at
+             a single file, so a contributor's first pull request fails on a missing ref rather than
+             on anything they wrote. Clearing ratchetFrom checks the whole tree and needs no git
+             history at all.
+
+             Three details, each of which silently does nothing if you get it wrong:
+               - a `spotless.ratchetFrom` property loses to the parent's explicit configuration;
+               - an empty `<ratchetFrom></ratchetFrom>` is dropped by Maven's config merge, so
+                 `combine.self="override"` is what actually blanks it;
+               - the execution needs the parent's id ('default') to override rather than add one.
+             The plugin-level copy is for `mvn spotless:check` from the command line, which runs as
+             'default-cli' and never sees the execution's configuration. -->
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <ratchetFrom combine.self="override" />
+        </configuration>
+        <executions>
+          <execution>
+            <id>default</id>
+            <configuration>
+              <ratchetFrom combine.self="override" />
+            </configuration>
           </execution>
         </executions>
       </plugin>
