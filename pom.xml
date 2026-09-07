@@ -34,22 +34,20 @@
     <java.version>21</java.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <main.java.package>io.phasetwo.keycloak.kms</main.java.package>
-    <keycloak.version>26.7.1</keycloak.version>
+    <keycloak.version>26.7.3</keycloak.version>
     <lombok.version>1.18.46</lombok.version>
     <auto-service.version>1.1.1</auto-service.version>
     <jacoco.version>0.8.14</jacoco.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <junit-jupiter.version>5.12.1</junit-jupiter.version>
     <bouncycastle.version>1.84</bouncycastle.version>
-    <!-- Newest patch of the 2.21.x line Keycloak ${keycloak.version} bundles (it ships 2.21.2).
+    <!-- Newest patch of the 2.21.x line Keycloak ${keycloak.version} bundles (it ships 2.21.5).
          Same line, so the API is identical; newer patch, so Dependabot stays quiet. -->
     <jackson.version>2.21.6</jackson.version>
     <!-- Default so that surefire/failsafe's @{argLine} still resolves when jacoco:prepare-agent
          has not run — e.g. when someone invokes failsafe:integration-test directly. -->
     <argLine></argLine>
     <ossrh.url>https://ossrh-staging-api.central.sonatype.com</ossrh.url>
-    <!-- Fresh repo: no origin/main to ratchet against until the first push. -->
-    <spotless.check.skip>true</spotless.check.skip>
   </properties>
 
   <scm>
@@ -88,7 +86,10 @@
       <plugin>
         <groupId>com.spotify.fmt</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
-        <version>2.27</version>
+        <!-- 2.27's google-java-format cannot parse on JDK 22+ (NoSuchMethodError on javac's
+             DeferredDiagnosticHandler). The project targets 21, but contributors run newer JDKs
+             and would hit a build failure with nothing to do with their change. -->
+        <version>2.29</version>
         <executions>
           <execution>
             <!-- Bound early on purpose. The goal defaults to the verify phase, which means a
@@ -97,6 +98,34 @@
             <goals>
               <goal>check</goal>
             </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- The parent ratchets against origin/main, which CI's shallow single-branch checkout does
+             not fetch: spotless then fails with "No such reference 'origin/main'" before it looks at
+             a single file, so a contributor's first pull request fails on a missing ref rather than
+             on anything they wrote. Clearing ratchetFrom checks the whole tree and needs no git
+             history at all.
+
+             Three details, each of which silently does nothing if you get it wrong:
+               - a `spotless.ratchetFrom` property loses to the parent's explicit configuration;
+               - an empty `<ratchetFrom></ratchetFrom>` is dropped by Maven's config merge, so
+                 `combine.self="override"` is what actually blanks it;
+               - the execution needs the parent's id ('default') to override rather than add one.
+             The plugin-level copy is for `mvn spotless:check` from the command line, which runs as
+             'default-cli' and never sees the execution's configuration. -->
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <configuration>
+          <ratchetFrom combine.self="override" />
+        </configuration>
+        <executions>
+          <execution>
+            <id>default</id>
+            <configuration>
+              <ratchetFrom combine.self="override" />
+            </configuration>
           </execution>
         </executions>
       </plugin>

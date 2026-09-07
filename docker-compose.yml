@@ -33,7 +33,7 @@ services:
       start_period: 15s
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.7.1
+    image: quay.io/keycloak/keycloak:26.7.3
     depends_on:
       localstack:
         condition: service_healthy

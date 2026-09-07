@@ -14,10 +14,10 @@ import java.util.Objects;
  * id it was sealed against no longer matches. The same holds for a value relabelled with a
  * different kid or key type.
  *
- * <p>This is the one thing the {@code serverless} implementation this extension is derived from did
- * not do — its AES-GCM envelope used no AAD, so any wrapped value decrypted anywhere the KEK was
- * present. In a shared database with per-realm administrators that is a real weakness, so the
- * context is mandatory here rather than optional.
+ * <p>The context is mandatory rather than optional, and every backend must enforce it. An envelope
+ * with no AAD decrypts anywhere the KEK is present, which in a shared database with per-realm
+ * administrators is a real weakness — one that no test notices unless the property is enforced on
+ * the only backend the tests can reach.
  *
  * <p>The context is also expressible in a KMS key policy, which is how an operator makes it a
  * KMS-side guarantee rather than something our code promises:

@@ -75,7 +75,7 @@ class WrappedMaterialTest {
   }
 
   @Test
-  @DisplayName("the on-disk format matches serverless's, so values are interchangeable")
+  @DisplayName("the on-disk format is pinned, because changing it is a migration")
   void formatIsStable() {
     // Pinned deliberately: this string shape is what lands in COMPONENT_CONFIG. Changing it is a
     // migration, not a refactor.

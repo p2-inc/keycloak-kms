@@ -5,14 +5,12 @@ import java.util.Base64;
 /**
  * The {@code kms://v1/<base64url>} value that stands in for key material in component config.
  *
- * <p>Format carried over verbatim from {@code serverless}'s {@code WrappedKeyGen}, including the
- * version segment. The version is the point: a future change to what the ciphertext contains is
- * then a legible "unsupported version" error rather than a decrypt failure that looks like a
- * corrupted key or a wrong CMK.
+ * <p>The version segment is the point: a future change to what the ciphertext contains is then a
+ * legible "unsupported version" error rather than a decrypt failure that looks like a corrupted key
+ * or a wrong CMK.
  *
- * <p>Self-contained by design. The alternative — a reference to a blob held elsewhere — was tried
- * in {@code serverless} (a services-plane key-custody store, D-016) and abandoned, because it needs
- * a store, an RPC and a consistency story to hold something that fits in a config row.
+ * <p>Self-contained by design. The alternative — a reference to a blob held in a separate key store
+ * — needs a store, an RPC and a consistency story to hold something that fits in a config row.
  */
 public final class WrappedMaterial {
 

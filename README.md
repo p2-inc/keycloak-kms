@@ -39,8 +39,16 @@ release.
 
 ## Install
 
+Build the jar — Java 21, and no AWS account needed to compile:
+
+```bash
+mvn package -DskipTests    # -> target/keycloak-kms.jar
+```
+
+Then bake it into your Keycloak image:
+
 ```dockerfile
-FROM quay.io/keycloak/keycloak:26.7.1
+FROM quay.io/keycloak/keycloak:26.7.3
 COPY keycloak-kms.jar /opt/keycloak/providers/
 RUN /opt/keycloak/bin/kc.sh build
 ```
@@ -151,6 +159,11 @@ Quarkus runtime and nothing to keep up to date for CVEs.
 Keycloak logs `KC-SERVICES0047: … is implementing the internal SPI keys` for each provider at build
 time. That is expected — the `keys` SPI is marked internal by Keycloak, and every key-provider
 extension gets the same warning.
+
+## Security
+
+Please report vulnerabilities privately rather than in an issue — see
+[SECURITY.md](SECURITY.md), which also says what is in scope and what deliberately is not.
 
 ## License
 

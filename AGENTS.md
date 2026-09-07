@@ -43,10 +43,10 @@ KmsBootstrap new-realm installer + startup sweep, both opt-in
 
 ## Things that are the way they are for a reason
 
-**The encryption context is mandatory.** The `serverless` implementation this came from used
-AES-GCM with no AAD, so any wrapped value decrypted anywhere the KEK was present. With per-realm
-tenancy in one database that is a real weakness. `LocalKmsProvider` enforces it too — a dev backend
-that ignored it would let every isolation test pass while the property went untested.
+**The encryption context is mandatory.** An envelope with no AAD decrypts anywhere the KEK is
+present, and with per-realm tenancy in one database that is a real weakness. `LocalKmsProvider`
+enforces it too — a dev backend that ignored it would let every isolation test pass while the
+property went untested.
 
 **`KeyCache` is keyed by content.** The alternative — key on component id, invalidate on an update
 event — has a window where a rotated key keeps signing with the material it replaced, and depends
@@ -106,9 +106,7 @@ request shape.
 - Google Java Format via `fmt-maven-plugin`, checked in CI
 - `testcontainers-keycloak` + REST-Assured for integration tests
 
-## Sibling projects
+## Docs
 
-- `bridge-extensions` — the other Phase Two extensions. `keycloak-transactional-email` is the
-  closest model (custom SPI, multiple backends, hand-rolled SigV4 for SES).
-- `serverless` — where the envelope design came from (§8.2 Tier A, decisions D-014/D-016). It keeps
-  its own `WrappedKeyProviderFactory`; the two are deliberately independent.
+`docs/` is the operator-facing set: `aws-setup.md` (the CMK, the IAM policy, credentials),
+`configuration.md` (every setting), `migration.md`, `native-mode.md`, `development.md`.

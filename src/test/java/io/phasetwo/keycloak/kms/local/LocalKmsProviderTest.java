@@ -55,7 +55,7 @@ class LocalKmsProviderTest {
     assertFalse(Arrays.equals(kms.encrypt(null, MATERIAL, c), kms.encrypt(null, MATERIAL, c)));
   }
 
-  // ---- the tenancy property: this is what serverless's envelope did NOT have ----
+  // ---- the tenancy property: an envelope with no AAD does not have this ----
 
   @Test
   @DisplayName("a ciphertext sealed for realm A does not decrypt for realm B")
