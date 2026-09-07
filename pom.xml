@@ -4,7 +4,7 @@
   <groupId>io.phasetwo.keycloak</groupId>
   <artifactId>keycloak-kms</artifactId>
   <packaging>jar</packaging>
-  <version>0.1</version>
+  <version>0.2-SNAPSHOT</version>
 
   <name>Phase Two Keycloak KMS</name>
   <description>Stores Keycloak realm signing keys in a cloud KMS instead of the database. Envelope encryption by default; optional non-extractable sign-in-KMS keys.</description>
@@ -53,7 +53,7 @@
   <scm>
     <url>https://github.com/p2-inc/keycloak-kms</url>
     <connection>scm:git:git@github.com:p2-inc/keycloak-kms.git</connection>
-    <tag>v0.1</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <build>
