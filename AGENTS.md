@@ -109,4 +109,6 @@ request shape.
 ## Docs
 
 `docs/` is the operator-facing set: `aws-setup.md` (the CMK, the IAM policy, credentials),
-`configuration.md` (every setting), `migration.md`, `native-mode.md`, `development.md`.
+`configuration.md` (every setting), `migration.md`, `key-rotation.md` (CMK and realm-key
+rotation runbook), `customer-managed-keys.md` (hosted customers' own CMK, cross-account),
+`native-mode.md`, `development.md`.

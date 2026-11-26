@@ -94,7 +94,8 @@ to start**. A key-custody control that starts anyway and quietly leaves realms o
 keys is worse than not installing one, because the operator sees a healthy server.
 
 See [docs/aws-setup.md](docs/aws-setup.md) for the key, the IAM policy and the credential options,
-and [docs/configuration.md](docs/configuration.md) for every setting.
+and [docs/configuration.md](docs/configuration.md) for every setting. Rotating or replacing the KMS
+key is covered in [docs/key-rotation.md](docs/key-rotation.md).
 
 ## Migrate the realms you already have
 
