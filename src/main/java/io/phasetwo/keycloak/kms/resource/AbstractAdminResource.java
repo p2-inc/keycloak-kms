@@ -110,6 +110,6 @@ public abstract class AbstractAdminResource {
       throw new NotFoundException("Could not find client for authorization");
     }
 
-    return new AdminAuth(realm, authResult.getToken(), authResult.getUser(), client);
+    return new AdminAuth(realm, authResult.token(), authResult.user(), client);
   }
 }
