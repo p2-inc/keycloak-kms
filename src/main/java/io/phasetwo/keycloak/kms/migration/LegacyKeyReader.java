@@ -19,7 +19,7 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 /**
  * Reads plaintext key material out of a stock Keycloak key provider.
  *
- * <p>Everything here is pinned to how Keycloak 26.7 actually stores keys, checked against the
+ * <p>Everything here is pinned to how Keycloak 26.8 actually stores keys, checked against the
  * shipped bytecode rather than the documentation:
  *
  * <ul>

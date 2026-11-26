@@ -67,7 +67,7 @@ mvn package -DskipTests    # -> target/keycloak-kms.jar
 Then bake it into your Keycloak image:
 
 ```dockerfile
-FROM quay.io/keycloak/keycloak:26.7.3
+FROM quay.io/keycloak/keycloak:26.8.2
 COPY keycloak-kms.jar /opt/keycloak/providers/
 RUN /opt/keycloak/bin/kc.sh build
 ```
@@ -172,7 +172,7 @@ See [docs/development.md](docs/development.md).
 
 ## Compatibility
 
-Keycloak 26.7.x, Java 21. The extension ships no runtime dependencies of its own: AWS is reached
+Keycloak 26.8.x, Java 21. The extension ships no runtime dependencies of its own: AWS is reached
 with hand-rolled SigV4 over the JDK HTTP client, so there is nothing to conflict with Keycloak's
 Quarkus runtime and nothing to keep up to date for CVEs.
 
