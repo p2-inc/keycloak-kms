@@ -42,6 +42,9 @@ aws kms enable-key-rotation --key-id alias/keycloak-realm-keys
 KMS keeps previous backing keys, so ciphertext written before a rotation still decrypts. Nothing in
 Keycloak needs to know, and no realm needs re-encrypting.
 
+Replacing the key with a different one is another matter: it needs every existing provider pinned
+first. See [key-rotation.md](key-rotation.md).
+
 ## 2. IAM
 
 Steady-state Keycloak needs three actions:
