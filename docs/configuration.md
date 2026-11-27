@@ -13,6 +13,11 @@ Set at startup, for the whole server.
 | `--spi-kms--aws--access-key-id` | *(none)* | Static credentials. Discouraged — see [aws-setup.md](aws-setup.md#3-credentials). |
 | `--spi-kms--aws--secret-access-key` | *(none)* | |
 | `--spi-kms--aws--session-token` | *(none)* | If the static credentials are temporary. |
+| `--spi-kms--aws--role-arn` | *(none)* | Assume this role (`sts:AssumeRole`) with the server's own credentials and call KMS as the role. For a key in another account whose owner grants a role. When set it is the only credential source. See [aws-setup.md](aws-setup.md#assuming-a-role-in-the-keys-account). |
+| `--spi-kms--aws--role-external-id` | *(none)* | The external id the role's trust policy requires. |
+| `--spi-kms--aws--role-session-name` | `keycloak-kms` | Session name, shown in the key owner's CloudTrail. |
+| `--spi-kms--aws--role-duration-seconds` | `3600` | Requested session length, 900 up to the role's maximum. Refreshed five minutes before expiry. |
+| `--spi-kms--aws--sts-endpoint` | regional, from the region | Override the STS endpoint used with `role-arn`. For LocalStack and tests. |
 | `--spi-kms--cache-ttl-seconds` | `300` | How long unwrapped material stays in memory. `0` disables caching, turning every signature into a KMS call. |
 | `--spi-kms--default-for-new-realms` | `false` | Create new realms with KMS-backed key providers instead of the stock ones. |
 | `--spi-kms--migrate-on-startup` | `false` | Migrate every realm at boot. Off by default; the per-realm REST endpoint is the supported path. |
@@ -27,8 +32,10 @@ KC_SPI_KMS__AWS__REGION: us-east-1
 KC_SPI_KMS__AWS__KEY_ID: alias/keycloak-realm-keys
 ```
 
-If your Keycloak version disagrees about that spelling, pass the options on the command line
-instead; that form is stable across versions and is what the integration tests use.
+The environment form is confirmed on Keycloak 26.8.2, including on Phase Two hosted clusters, where
+it is the only way to set server options. If your Keycloak version disagrees about the spelling,
+pass the options on the command line instead; that form is stable across versions and is what the
+integration tests use.
 
 ## Per-provider configuration
 

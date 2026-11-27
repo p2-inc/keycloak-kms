@@ -30,6 +30,7 @@ public class AwsCredentialsProviderChain implements AwsCredentialsProvider {
 
   private volatile AwsCredentialsProvider winner;
   private volatile AwsCredentials cached;
+  private volatile List<String> lastTried = List.of();
 
   public AwsCredentialsProviderChain(List<AwsCredentialsProvider> sources) {
     this.sources = List.copyOf(sources);
@@ -94,6 +95,7 @@ public class AwsCredentialsProviderChain implements AwsCredentialsProvider {
       }
     }
     log.errorf("No AWS credentials found. Tried: %s", String.join("; ", tried));
+    lastTried = List.copyOf(tried);
     return null;
   }
 
@@ -106,7 +108,9 @@ public class AwsCredentialsProviderChain implements AwsCredentialsProvider {
               + " EC2 instance profile), set AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY, or set"
               + " --spi-kms--aws--access-key-id and --spi-kms--aws--secret-access-key. Sources"
               + " tried, in order: "
-              + String.join(", ", sources.stream().map(AwsCredentialsProvider::name).toList()));
+              + (lastTried.isEmpty()
+                  ? String.join(", ", sources.stream().map(AwsCredentialsProvider::name).toList())
+                  : String.join("; ", lastTried)));
     }
     return c;
   }
