@@ -1,6 +1,7 @@
 package io.phasetwo.keycloak.kms.aws;
 
 import com.google.auto.service.AutoService;
+import io.phasetwo.keycloak.kms.aws.credentials.AssumeRoleCredentialsProvider;
 import io.phasetwo.keycloak.kms.aws.credentials.AwsCredentialsProviderChain;
 import io.phasetwo.keycloak.kms.aws.credentials.Environment;
 import io.phasetwo.keycloak.kms.aws.credentials.StaticCredentialsProvider;
@@ -34,6 +35,7 @@ public class AwsKmsProviderFactory implements KmsProviderFactory {
   private Environment env = Environment.SYSTEM;
   private volatile AwsKmsProvider provider;
   private volatile AwsCredentialsProviderChain credentials;
+  private volatile AssumeRoleCredentialsProvider assumeRole;
   private String region;
   private String keyId;
 
@@ -55,7 +57,25 @@ public class AwsKmsProviderFactory implements KmsProviderFactory {
     StaticCredentialsProvider staticCredentials =
         new StaticCredentialsProvider(
             config.get("accessKeyId"), config.get("secretAccessKey"), config.get("sessionToken"));
-    this.credentials = AwsCredentialsProviderChain.standard(env, staticCredentials);
+    AwsCredentialsProviderChain base = AwsCredentialsProviderChain.standard(env, staticCredentials);
+
+    String roleArn = config.get("roleArn");
+    if (roleArn != null && !roleArn.isBlank()) {
+      // The assumed role is the only source once configured: falling back to the base identity on
+      // a failure would call KMS as someone the key's owner never granted.
+      this.assumeRole =
+          new AssumeRoleCredentialsProvider(
+              base,
+              roleArn,
+              config.get("roleExternalId"),
+              config.get("roleSessionName"),
+              config.getInt("roleDurationSeconds", 0),
+              region,
+              config.get("stsEndpoint"));
+      this.credentials = new AwsCredentialsProviderChain(List.of(assumeRole));
+    } else {
+      this.credentials = base;
+    }
 
     KmsApi api = new KmsApi(credentials, region, config.get("endpoint"));
     this.provider = new AwsKmsProvider(api, keyId);
@@ -123,7 +143,7 @@ public class AwsKmsProviderFactory implements KmsProviderFactory {
 
     log.infof(
         "keycloak-kms: AWS KMS ready — key=%s region=%s credentials=%s",
-        key, region, credentials.resolvedSource());
+        key, region, assumeRole != null ? assumeRole.describe() : credentials.resolvedSource());
   }
 
   @Override
@@ -172,6 +192,36 @@ public class AwsKmsProviderFactory implements KmsProviderFactory {
         .type(ProviderConfigProperty.PASSWORD)
         .secret(true)
         .helpText("Session token, if the static credentials are temporary.")
+        .add()
+        .property()
+        .name("roleArn")
+        .type(ProviderConfigProperty.STRING_TYPE)
+        .helpText(
+            "Assume this role (sts:AssumeRole) with the server's own credentials and call KMS as"
+                + " the role. For a key in another account whose owner grants a role rather than"
+                + " your identity. When set, it is the only credential source.")
+        .add()
+        .property()
+        .name("roleExternalId")
+        .type(ProviderConfigProperty.STRING_TYPE)
+        .helpText("External id the role's trust policy requires (sts:ExternalId), if any.")
+        .add()
+        .property()
+        .name("roleSessionName")
+        .type(ProviderConfigProperty.STRING_TYPE)
+        .defaultValue("keycloak-kms")
+        .helpText("Session name for the assumed role. It appears in the key owner's CloudTrail.")
+        .add()
+        .property()
+        .name("roleDurationSeconds")
+        .type(ProviderConfigProperty.STRING_TYPE)
+        .defaultValue("3600")
+        .helpText("Requested session length, 900 to the role's maximum. Refreshed before expiry.")
+        .add()
+        .property()
+        .name("stsEndpoint")
+        .type(ProviderConfigProperty.STRING_TYPE)
+        .helpText("Override the STS endpoint URL used with roleArn. For LocalStack and tests.")
         .add()
         .build();
   }

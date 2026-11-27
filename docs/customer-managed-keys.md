@@ -38,10 +38,31 @@ our side or an administrator of another tenant. Do not leave it out.
 
 - **Region.** The key must be in the same region as your Keycloak cluster. A multi-Region key
   works if it has a replica in that region. We tell you the region during onboarding.
+- **Failover to another region.** If your realm may ever run in a second region, create the key
+  as multi-Region (`--multi-region`) and replicate it there **before onboarding**. Ciphertext
+  sealed under a single-Region key can only be decrypted in that region, and converting later means
+  re-encrypting every realm key. Grant the replica the same policy statements, and send us both
+  ARNs.
 - **Key type.** Symmetric, `ENCRYPT_DECRYPT`, `SYMMETRIC_DEFAULT`. Asymmetric keys are a different
   feature.
 - **Referenced by key ARN.** We store the full key ARN against your realm. Aliases in your account
   are not visible to ours.
+
+## Dedicated clusters
+
+On a cluster that serves only your realms, two things can be simpler:
+
+- **Your key can be the cluster's default key.** Every KMS-backed provider on the cluster then uses
+  it, including ones created later, and nothing has to be set per provider. The `realm` condition
+  is still worth keeping.
+- **You can grant a role instead of editing the key policy.** Create a role in your account with
+  the `kms:Encrypt`/`kms:Decrypt` (with `app=keycloak`) and `kms:DescribeKey` permissions on your
+  key, and a trust policy naming our Keycloak role and an external id we agree with you. We
+  configure the cluster to assume it ([aws-setup.md](aws-setup.md#assuming-a-role-in-the-keys-account)).
+  Revoking is then a change to that role alone.
+
+With your key as the cluster's default, revoking access affects the whole cluster, not one realm.
+See [revoking access](#revoking-access).
 
 ## Onboarding
 
@@ -197,6 +218,10 @@ us.
   public keys they have already fetched, and no KMS call is involved. Revocation stops new tokens.
   It does not recall old ones.
 - **Other tenants are unaffected.**
+- **On a dedicated cluster where your key is the default**, Keycloak also checks the key when it
+  starts, and refuses to start if it cannot reach it. Any restart while access is revoked, ours
+  for maintenance or a configuration change, leaves the cluster down rather than running without
+  your key. Restoring access lets it start again.
 - **Restoring is instant.** Put the statements back or re-enable the key. Your realm recovers on the
   next cache refresh, with no action from us and no change of keys.
 

@@ -112,6 +112,10 @@ No access keys. The extension resolves credentials in this order and logs which 
 | 5 | IRSA | `AWS_ROLE_ARN` + `AWS_WEB_IDENTITY_TOKEN_FILE` (STS `AssumeRoleWithWebIdentity`) |
 | 6 | EC2 instance profile | IMDSv2 |
 
+With `--spi-kms--aws--role-arn` set, the source that wins above is only the base identity: the
+extension assumes the role with it and calls KMS as the role. See
+[assuming a role](#assuming-a-role-in-the-keys-account).
+
 Temporary credentials are refreshed through whichever source produced them, five minutes before
 they expire.
 
@@ -133,6 +137,55 @@ serviceAccount:
 The role's trust policy must name the cluster's OIDC provider and this service account. If the
 projected token is missing or the trust policy does not match, the startup error says so rather
 than falling through to the next source silently.
+
+### Assuming a role in the key's account
+
+When the KMS key belongs to another AWS account, its owner has two ways to let Keycloak use it:
+
+- **Grant Keycloak's identity in the key policy.** Cross-account KMS works natively, so nothing
+  changes on the Keycloak side except the key ARN (aliases are not visible across accounts). This
+  is what [customer-managed-keys.md](customer-managed-keys.md) describes, and the only option on a
+  multi-tenant cluster, because it can pin each grant to the tenant's realm ids.
+- **Create a role that may use the key, and let Keycloak's identity assume it.** The key policy
+  stays untouched, and revoking is a change to one role in the owner's account. One role applies to
+  the whole server, so this fits a dedicated cluster:
+
+```bash
+kc.sh start \
+  --spi-kms--provider=aws \
+  --spi-kms--aws--region=eu-central-1 \
+  --spi-kms--aws--key-id=arn:aws:kms:eu-central-1:444455556666:key/<key-id> \
+  --spi-kms--aws--role-arn=arn:aws:iam::444455556666:role/keycloak-kms \
+  --spi-kms--aws--role-external-id=<agreed external id>
+```
+
+The role's permission policy is the one in [IAM](#2-iam), and its trust policy names Keycloak's
+identity and the external id:
+
+```json
+{
+  "Effect": "Allow",
+  "Principal": { "AWS": "arn:aws:iam::111122223333:root" },
+  "Action": "sts:AssumeRole",
+  "Condition": {
+    "ArnLike": { "aws:PrincipalArn": "arn:aws:iam::111122223333:role/keycloak" },
+    "StringEquals": { "sts:ExternalId": "<agreed external id>" }
+  }
+}
+```
+
+Keycloak's own identity also needs `sts:AssumeRole` on that role ARN. The startup log names both:
+
+```
+INFO  keycloak-kms: AWS KMS ready — key=arn:aws:kms:eu-central-1:444455556666:key/… (…)
+      region=eu-central-1 credentials=assume-role arn:aws:iam::444455556666:role/keycloak-kms via web-identity
+```
+
+If the role cannot be assumed, Keycloak does not start, and does not fall back to calling KMS as
+the base identity. The error carries STS's answer, the role, and which identity tried.
+
+The base identity can be any source in the table, including static keys. Static keys under a role
+are still a long-lived secret; a role assumed with a pod's or instance's own identity is not.
 
 ### Static keys
 
