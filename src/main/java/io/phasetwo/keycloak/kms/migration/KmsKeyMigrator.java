@@ -59,7 +59,10 @@ public class KmsKeyMigrator {
    * Migrate every migratable key provider in a realm.
    *
    * <p>Idempotent: a realm already holding a KMS provider for a given key is reported as skipped
-   * rather than migrated twice, so a failed run can simply be repeated.
+   * rather than migrated twice, so a failed run can simply be repeated. That includes a legacy
+   * provider kept by an earlier run without {@code deleteLegacy}: it still holds its plaintext, but
+   * its key already has a KMS provider, so it is not migrated again. With {@code deleteLegacy} it
+   * is deleted instead.
    */
   public MigrationReport migrate(RealmModel realm, boolean deleteLegacy) {
     List<MigratedKey> migrated = new ArrayList<>();
@@ -67,6 +70,7 @@ public class KmsKeyMigrator {
     List<String> warnings = new ArrayList<>();
 
     List<ComponentModel> providers = keyProviders(realm);
+    boolean keptMigratedLegacy = false;
 
     for (ComponentModel legacy : providers) {
       if (LegacyKeyReader.isKmsBacked(legacy)) {
@@ -84,6 +88,35 @@ public class KmsKeyMigrator {
         skipped.add(
             new SkippedKey(
                 legacy.getProviderId(), legacy.getId(), "No key material found in its config."));
+        continue;
+      }
+
+      // Kept by an earlier run without deleteLegacy: its key is already in the KMS. Migrating it
+      // again would add a second KMS provider for the same kid.
+      ComponentModel replacement = existingReplacement(providers, legacy);
+      if (replacement != null) {
+        if (deleteLegacy) {
+          realm.removeComponent(legacy);
+          log.infof(
+              "kms: realm '%s': deleted legacy %s provider %s, already migrated to %s",
+              realm.getName(), legacy.getProviderId(), legacy.getId(), replacement.getId());
+          skipped.add(
+              new SkippedKey(
+                  legacy.getProviderId(),
+                  legacy.getId(),
+                  "Already migrated to "
+                      + replacement.getId()
+                      + "; this legacy provider, which still held its plaintext, has been deleted."));
+        } else {
+          keptMigratedLegacy = true;
+          skipped.add(
+              new SkippedKey(
+                  legacy.getProviderId(),
+                  legacy.getId(),
+                  "Already migrated to "
+                      + replacement.getId()
+                      + "; this legacy provider is deactivated but still holds its plaintext."));
+        }
         continue;
       }
 
@@ -108,7 +141,7 @@ public class KmsKeyMigrator {
               + " exposure but does not undo past exposure — rotate to fresh KMS-generated material"
               + " once tokens signed by these kids have expired (POST .../kms/rotate).");
     }
-    if (!deleteLegacy && !migrated.isEmpty()) {
+    if (!deleteLegacy && (!migrated.isEmpty() || keptMigratedLegacy)) {
       warnings.add(
           "The legacy providers are deactivated but still present, and their rows in"
               + " COMPONENT_CONFIG still contain plaintext key material. Delete them in the admin"
@@ -123,6 +156,33 @@ public class KmsKeyMigrator {
     }
 
     return new MigrationReport(realm.getName(), migrated, skipped, plaintextRemains, warnings);
+  }
+
+  /**
+   * The KMS provider an earlier migration created for {@code legacy}, or null. Matched by the
+   * {@code migratedFromComponentId} the migration records, or failing that by the same kid on the
+   * KMS provider type that would hold this key.
+   */
+  private static ComponentModel existingReplacement(
+      List<ComponentModel> providers, ComponentModel legacy) {
+    LegacyKey key = null;
+    for (ComponentModel c : providers) {
+      if (c == legacy || !LegacyKeyReader.isKmsBacked(c)) {
+        continue;
+      }
+      if (legacy.getId() != null && legacy.getId().equals(c.get(KmsAttributes.MIGRATED_FROM))) {
+        return c;
+      }
+      if (key == null) {
+        key = LegacyKeyReader.read(legacy);
+      }
+      if (key.targetProviderId().equals(c.getProviderId())
+          && key.kid() != null
+          && key.kid().equals(c.get(Attributes.KID_KEY))) {
+        return c;
+      }
+    }
+    return null;
   }
 
   private MigratedKey migrateOne(RealmModel realm, ComponentModel legacy, boolean deleteLegacy) {

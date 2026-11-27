@@ -298,6 +298,58 @@ class KmsKeyMigratorTest {
     assertFalse(second.plaintextRemains());
   }
 
+  private long kmsProvidersWithKid(String kid) {
+    return realm.components().stream()
+        .filter(LegacyKeyReader::isKmsBacked)
+        .filter(c -> kid.equals(c.get(Attributes.KID_KEY)))
+        .count();
+  }
+
+  @Test
+  @DisplayName("re-running after a run that kept the legacy providers does not migrate them again")
+  void rerunAfterKeepingLegacyDoesNotDuplicate() {
+    ComponentModel rsa = seedStockRsa(100);
+    ComponentModel hmac = seedStockHmac("hmac-kid");
+    MigrationReport first = migrator.migrate(realm.model(), false);
+    assertEquals(2, first.migrated().size());
+
+    MigrationReport second = migrator.migrate(realm.model(), false);
+
+    assertEquals(0, second.migrated().size(), second.toString());
+    for (MigratedKey m : first.migrated()) {
+      assertEquals(1, kmsProvidersWithKid(m.kid()), "one KMS provider per kid: " + m.kid());
+    }
+    assertNotNull(realm.component(rsa.getId()), "still the operator's call to delete");
+    assertNotNull(realm.component(hmac.getId()));
+    assertTrue(
+        second.skipped().stream()
+            .filter(s -> s.componentId().equals(rsa.getId()))
+            .anyMatch(s -> s.reason().startsWith("Already migrated to")),
+        second.toString());
+    assertTrue(second.plaintextRemains());
+    assertTrue(
+        second.warnings().stream().anyMatch(w -> w.contains("COMPONENT_CONFIG")),
+        "the kept plaintext must still be called out: " + second.warnings());
+  }
+
+  @Test
+  @DisplayName("deleteLegacy on a re-run deletes the kept legacy providers rather than duplicating")
+  void rerunWithDeleteLegacyRemovesKeptLegacy() {
+    ComponentModel rsa = seedStockRsa(100);
+    ComponentModel hmac = seedStockHmac("hmac-kid");
+    MigrationReport first = migrator.migrate(realm.model(), false);
+
+    MigrationReport second = migrator.migrate(realm.model(), true);
+
+    assertEquals(0, second.migrated().size(), second.toString());
+    assertNull(realm.component(rsa.getId()));
+    assertNull(realm.component(hmac.getId()));
+    for (MigratedKey m : first.migrated()) {
+      assertEquals(1, kmsProvidersWithKid(m.kid()), "one KMS provider per kid: " + m.kid());
+    }
+    assertFalse(second.plaintextRemains(), "nothing in this realm should hold plaintext now");
+  }
+
   @Test
   @DisplayName("a KMS failure on one key leaves that key untouched and still migrates the others")
   void oneFailureDoesNotAbandonTheRest() {
